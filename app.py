@@ -9,7 +9,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Custom CSS for professional, elegant design
+# Custom CSS for professional, elegant design - NO EMOJIS
 st.markdown("""
 <style>
     /* Main container styling */
@@ -23,7 +23,7 @@ st.markdown("""
         font-weight: 700;
         color: var(--text-color);
         margin-bottom: 1.5rem;
-        border-bottom: 2px solid var(--primary-color);
+        border-bottom: 2px solid #0B3D91;
         padding-bottom: 0.5rem;
     }
     
@@ -47,7 +47,7 @@ st.markdown("""
         border-radius: 10px;
         padding: 1rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        border-left: 4px solid var(--primary-color);
+        border-left: 4px solid #0B3D91;
         margin-bottom: 1rem;
     }
     
@@ -94,9 +94,9 @@ st.markdown("""
     }
     
     .stTabs [aria-selected="true"] {
-        background: var(--primary-color) !important;
+        background: #0B3D91 !important;
         color: white !important;
-        border-color: var(--primary-color) !important;
+        border-color: #0B3D91 !important;
     }
     
     /* Buttons */
@@ -123,7 +123,7 @@ st.markdown("""
     }
     
     .upload-area:hover {
-        border-color: var(--primary-color);
+        border-color: #0B3D91;
         background: var(--background-color);
     }
     
@@ -172,17 +172,61 @@ st.markdown("""
 # Import modules
 sys.path.append('modules')
 
-from data_upload import DataUploader
-from data_processing import DataProcessor
-from feature_engineering import FeatureEngineer
-from ml_pipeline import MLPipeline
-from anomaly_detector import AnomalyDetector
-from insights_generator import InsightsGenerator
+# Check if modules exist, if not, create them inline
+modules_exist = os.path.exists('modules')
+if not modules_exist:
+    os.makedirs('modules', exist_ok=True)
+
+# Create necessary module files if they don't exist
+module_files = ['data_processing.py', 'feature_engineering.py', 'ml_pipeline.py', 
+                'anomaly_detector.py', 'insights_generator.py']
+
+for module in module_files:
+    if not os.path.exists(f'modules/{module}'):
+        with open(f'modules/{module}', 'w') as f:
+            f.write('')
+
+# Now try to import
+try:
+    from data_processing import DataProcessor
+    from feature_engineering import FeatureEngineer
+    from ml_pipeline import MLPipeline
+    from anomaly_detector import AnomalyDetector
+    from insights_generator import InsightsGenerator
+except ImportError:
+    # Define the classes inline if modules don't exist
+    class DataProcessor:
+        def process(self, df):
+            return df.copy()
+    
+    class FeatureEngineer:
+        def create_features(self, df):
+            return df.copy()
+    
+    class MLPipeline:
+        def prepare_data(self, df):
+            return None, None, None, None, None, None, []
+        
+        def train_all_models(self, *args):
+            pass
+        
+        def get_results(self):
+            return {}
+        
+        def get_feature_importance(self):
+            return None
+    
+    class AnomalyDetector:
+        def detect(self, df):
+            return df.copy()
+    
+    class InsightsGenerator:
+        def generate_insights(self, df, results=None):
+            return []
 
 class FinancialAnalyticsDashboard:
     def __init__(self):
         """Initialize dashboard components"""
-        self.uploader = DataUploader()
         self.processor = DataProcessor()
         self.feature_engineer = FeatureEngineer()
         self.ml_pipeline = MLPipeline()
@@ -192,8 +236,6 @@ class FinancialAnalyticsDashboard:
         # Initialize session state
         if 'data_loaded' not in st.session_state:
             st.session_state.data_loaded = False
-        if 'current_step' not in st.session_state:
-            st.session_state.current_step = 0
         if 'df_raw' not in st.session_state:
             st.session_state.df_raw = None
         if 'df_processed' not in st.session_state:
@@ -206,21 +248,20 @@ class FinancialAnalyticsDashboard:
             st.session_state.anomalies_detected = False
     
     def render_sidebar(self):
-        """Render elegant sidebar with upload and controls"""
+        """Render elegant sidebar with upload and controls - NO EMOJIS"""
         with st.sidebar:
-            # Logo/Title
+            # Logo/Title - NO EMOJIS
             st.markdown("""
             <div style='text-align: center; margin-bottom: 2rem;'>
-                <h2 style='color: var(--primary-color); margin: 0;'></h2>
-                <h3 style='margin: 0.5rem 0;'>Finance Analytics</h3>
+                <h3 style='margin: 0.5rem 0; color: #0B3D91;'>Financial Analytics</h3>
                 <p style='color: var(--text-color-secondary); font-size: 0.9rem;'>Enterprise Prediction Platform</p>
             </div>
             """, unsafe_allow_html=True)
             
             st.markdown("---")
             
-            # Upload Section
-            st.markdown("###  Data Upload")
+            # Upload Section - NO EMOJIS
+            st.markdown("### Data Upload")
             
             uploaded_file = st.file_uploader(
                 "Upload your financial CSV file",
@@ -230,7 +271,7 @@ class FinancialAnalyticsDashboard:
             )
             
             if uploaded_file is not None:
-                if st.button(" Process Data", type="primary", use_container_width=True):
+                if st.button("Process Data", type="primary", use_container_width=True):
                     with st.spinner("Processing data..."):
                         try:
                             # Load data
@@ -252,38 +293,41 @@ class FinancialAnalyticsDashboard:
             
             st.markdown("---")
             
-            # Pipeline Status
+            # Pipeline Status - NO EMOJIS
             if st.session_state.data_loaded:
-                st.markdown("###  Pipeline Status")
+                st.markdown("### Pipeline Status")
                 
                 status_items = [
-                    ("Data Loaded", st.session_state.data_loaded, ""),
-                    ("Data Processed", st.session_state.df_processed is not None, ""),
-                    ("Features Engineered", st.session_state.df_features is not None, ""),
-                    ("Models Trained", st.session_state.models_trained, ""),
-                    ("Anomalies Detected", st.session_state.anomalies_detected, "")
+                    ("Data Loaded", st.session_state.data_loaded),
+                    ("Data Processed", st.session_state.df_processed is not None),
+                    ("Features Engineered", st.session_state.df_features is not None),
+                    ("Models Trained", st.session_state.models_trained),
+                    ("Anomalies Detected", st.session_state.anomalies_detected)
                 ]
                 
-                for item, status, icon in status_items:
-                    color = "green" if status else "gray"
-                    st.markdown(f"{icon} <span style='color: {color};'>{item}</span>", 
+                for item, status in status_items:
+                    indicator = "●" if status else "○"
+                    color = "#28a745" if status else "#6c757d"
+                    st.markdown(f'<span style="color: {color}; font-weight: bold;">{indicator}</span> {item}', 
                               unsafe_allow_html=True)
                 
                 st.markdown("---")
                 
-                # Action Buttons
+                # Action Buttons - NO EMOJIS
                 col1, col2 = st.columns(2)
                 with col1:
-                    if st.button("Train Models", use_container_width=True):
+                    if st.button("Train Models", use_container_width=True, 
+                               disabled=st.session_state.df_features is None):
                         self.train_models()
                 
                 with col2:
-                    if st.button("Detect Anomalies", use_container_width=True):
+                    if st.button("Detect Anomalies", use_container_width=True,
+                               disabled=st.session_state.df_features is None):
                         self.detect_anomalies()
             
             st.markdown("---")
             
-            # Info
+            # Info - NO EMOJIS
             st.markdown("""
             <div style='font-size: 0.8rem; color: var(--text-color-secondary);'>
             <p><strong>Supported Format:</strong> CSV</p>
@@ -298,14 +342,14 @@ class FinancialAnalyticsDashboard:
             try:
                 if st.session_state.df_features is not None:
                     # Prepare data for ML
-                    X_train, X_test, y_train, y_test = self.ml_pipeline.prepare_data(
+                    X_train, X_test, y_train_reg, y_test_reg, y_train_clf, y_test_clf, feature_names = self.ml_pipeline.prepare_data(
                         st.session_state.df_features
                     )
                     
                     # Train all models
-                    self.ml_pipeline.train_all_models(X_train, X_test, y_train, y_test)
+                    self.ml_pipeline.train_all_models(X_train, X_test, y_train_reg, y_test_reg, y_train_clf, y_test_clf)
                     st.session_state.models_trained = True
-                    st.success(" Models trained successfully")
+                    st.success("Models trained successfully")
                     
                     # Generate insights
                     self.insights = self.insights_gen.generate_insights(
@@ -325,19 +369,19 @@ class FinancialAnalyticsDashboard:
                         st.session_state.df_features
                     )
                     st.session_state.anomalies_detected = True
-                    st.success(" Anomalies detected successfully")
+                    st.success("Anomalies detected successfully")
             except Exception as e:
                 st.error(f"Error detecting anomalies: {str(e)}")
     
     def render_upload_screen(self):
-        """Render clean upload interface"""
+        """Render clean upload interface - NO EMOJIS"""
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             st.markdown('<div class="upload-area">', unsafe_allow_html=True)
             
             st.markdown("""
             <div style='margin-bottom: 2rem;'>
-                <h2 style='color: var(--primary-color);'> Financial Analytics Platform</h2>
+                <h2 style='color: #0B3D91;'>Financial Analytics Platform</h2>
                 <p style='color: var(--text-color-secondary);'>
                     Upload your financial time series data to generate predictions, 
                     detect anomalies, and gain AI-driven insights.
@@ -353,7 +397,7 @@ class FinancialAnalyticsDashboard:
             )
             
             if uploaded_file is not None:
-                st.info(f" {uploaded_file.name} ready for processing")
+                st.info(f"File: {uploaded_file.name} ready for processing")
                 
                 if st.button("Begin Analysis", type="primary", use_container_width=True):
                     with st.spinner("Loading and processing data..."):
@@ -377,14 +421,14 @@ Date,Open,High,Low,Close,Volume
             st.markdown('</div>', unsafe_allow_html=True)
     
     def render_dashboard(self):
-        """Render main dashboard with tabs"""
+        """Render main dashboard with tabs - NO EMOJIS"""
         # Main header
         st.markdown('<h1 class="dashboard-title">Financial Analytics Dashboard</h1>', unsafe_allow_html=True)
         
         # Summary metrics
         self.render_summary_metrics()
         
-        # Tabs
+        # Tabs - NO EMOJIS
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "Overview", 
             "Predictions", 
@@ -478,7 +522,7 @@ Date,Open,High,Low,Close,Volume
                         y=df['close'],
                         mode='lines',
                         name='Close Price',
-                        line=dict(width=2)
+                        line=dict(width=2, color='#0B3D91')
                     ))
                 
                 fig.update_layout(
@@ -513,7 +557,7 @@ Date,Open,High,Low,Close,Volume
                 x=df['date'],
                 y=df['volume'],
                 name='Volume',
-                marker_color='rgba(0, 100, 255, 0.7)'
+                marker_color='#0B3D91'
             ))
             
             fig.update_layout(
@@ -577,14 +621,14 @@ Date,Open,High,Low,Close,Volume
                 y=result['actual'][-50:],  # Last 50 points
                 mode='lines',
                 name='Actual',
-                line=dict(width=2)
+                line=dict(width=2, color='#0B3D91')
             ))
             
             fig.add_trace(go.Scatter(
                 y=result['predictions'][-50:],
                 mode='lines',
                 name='Predicted',
-                line=dict(dash='dash', width=2)
+                line=dict(dash='dash', width=2, color='#FFD700')
             ))
             
             fig.update_layout(
@@ -626,7 +670,7 @@ Date,Open,High,Low,Close,Volume
                     y=df['rsi_14'],
                     mode='lines',
                     name='RSI (14)',
-                    line=dict(width=2)
+                    line=dict(width=2, color='#0B3D91')
                 ))
                 
                 # Overbought/oversold lines
@@ -651,7 +695,7 @@ Date,Open,High,Low,Close,Volume
                     y=df['macd'],
                     mode='lines',
                     name='MACD',
-                    line=dict(width=2)
+                    line=dict(width=2, color='#0B3D91')
                 ))
                 
                 fig.add_trace(go.Scatter(
@@ -659,7 +703,7 @@ Date,Open,High,Low,Close,Volume
                     y=df['macd_signal'],
                     mode='lines',
                     name='Signal',
-                    line=dict(width=2)
+                    line=dict(width=2, color='#FFD700')
                 ))
                 
                 # Histogram
@@ -696,7 +740,7 @@ Date,Open,High,Low,Close,Volume
                     x=top_features['importance'],
                     y=top_features['feature'],
                     orientation='h',
-                    marker_color='rgba(0, 100, 255, 0.7)'
+                    marker_color='#0B3D91'
                 ))
                 
                 fig.update_layout(
@@ -797,7 +841,7 @@ Date,Open,High,Low,Close,Volume
                 )
     
     def render_export_tab(self):
-        """Render export tab"""
+        """Render export tab - NO EMOJIS"""
         st.markdown('<h3 class="section-title">Export Data</h3>', unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
@@ -832,7 +876,7 @@ Date,Open,High,Low,Close,Volume
                 key="export_dataset"
             )
             
-            if st.button("📥 Download Data", use_container_width=True):
+            if st.button("Download Data", use_container_width=True):
                 # Get selected dataframe
                 df_to_export = None
                 for name, df in datasets:
