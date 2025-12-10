@@ -9,7 +9,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Custom CSS for professional, elegant design
+# Custom CSS for professional, elegant design with sidebar toggle
 st.markdown("""
 <style>
     /* Main container styling */
@@ -179,6 +179,65 @@ st.markdown("""
         margin-left: 0;
         padding-top: 2rem;
     }
+    
+    /* Sidebar toggle button */
+    .sidebar-toggle {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 999;
+        background: #0B3D91;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    .sidebar-toggle:hover {
+        background: #0A3179;
+        transform: scale(1.05);
+    }
+    
+    /* Custom sidebar when native sidebar is hidden */
+    .custom-sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 280px;
+        background: var(--background-color);
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        z-index: 998;
+        padding: 1rem;
+        overflow-y: auto;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .custom-sidebar.open {
+        transform: translateX(0);
+    }
+    
+    .custom-sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 997;
+        display: none;
+    }
+    
+    .custom-sidebar-overlay.open {
+        display: block;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -259,6 +318,163 @@ class FinancialAnalyticsDashboard:
             st.session_state.models_trained = False
         if 'anomalies_detected' not in st.session_state:
             st.session_state.anomalies_detected = False
+        if 'show_custom_sidebar' not in st.session_state:
+            st.session_state.show_custom_sidebar = False
+    
+    def render_custom_sidebar(self):
+        """Render a custom sidebar when native sidebar is hidden"""
+        if st.session_state.show_custom_sidebar:
+            # Add overlay
+            st.markdown('<div class="custom-sidebar-overlay open" onclick="document.getElementById(\'customSidebarToggle\').click()"></div>', unsafe_allow_html=True)
+            
+            # Custom sidebar content
+            sidebar_html = """
+            <div class="custom-sidebar open">
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="color: #0B3D91; margin-bottom: 0.5rem;">Financial Analytics</h3>
+                    <p style="color: var(--text-color-secondary); font-size: 0.9rem;">Enterprise Prediction Platform</p>
+                </div>
+                <hr style="margin: 1rem 0;">
+            """
+            
+            # Add sidebar content
+            st.markdown(sidebar_html, unsafe_allow_html=True)
+            
+            # Recreate sidebar content
+            self._render_sidebar_content()
+            
+            # Close sidebar button
+            st.markdown("""
+                <div style="margin-top: 2rem; padding: 1rem; border-top: 1px solid var(--border-color);">
+                    <button onclick="document.getElementById('customSidebarToggle').click()" style="
+                        width: 100%;
+                        padding: 0.5rem;
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                    ">Close Sidebar</button>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    def _render_sidebar_content(self):
+        """Render sidebar content (used by both native and custom sidebar)"""
+        # Upload Section
+        st.markdown("### Data Upload")
+        
+        uploaded_file = st.file_uploader(
+            "Upload your financial CSV file",
+            type=['csv'],
+            help="Upload time series data with columns like Date, Open, High, Low, Close, Volume",
+            key="file_uploader_sidebar"
+        )
+        
+        if uploaded_file is not None:
+            if st.button("Process Data", type="primary", use_container_width=True, key="process_btn_sidebar"):
+                with st.spinner("Processing data..."):
+                    try:
+                        # Load data
+                        st.session_state.df_raw = pd.read_csv(uploaded_file)
+                        st.session_state.data_loaded = True
+                        
+                        # Process data
+                        st.session_state.df_processed = self.processor.process(st.session_state.df_raw)
+                        
+                        # Engineer features
+                        st.session_state.df_features = self.feature_engineer.create_features(
+                            st.session_state.df_processed
+                        )
+                        
+                        st.success("Data processed successfully")
+                        st.rerun()
+                        
+                    except Exception as e:
+                        st.error(f"Error processing data: {str(e)}")
+        
+        st.markdown("---")
+        
+        # Pipeline Status
+        if st.session_state.data_loaded:
+            st.markdown("### Pipeline Status")
+            
+            status_items = [
+                ("Data Loaded", st.session_state.data_loaded),
+                ("Data Processed", st.session_state.df_processed is not None),
+                ("Features Engineered", st.session_state.df_features is not None),
+                ("Models Trained", st.session_state.models_trained),
+                ("Anomalies Detected", st.session_state.anomalies_detected)
+            ]
+            
+            for item, status in status_items:
+                indicator = "●" if status else "○"
+                color = "#28a745" if status else "#6c757d"
+                st.markdown(f'<span style="color: {color}; font-weight: bold;">{indicator}</span> {item}', 
+                          unsafe_allow_html=True)
+            
+            st.markdown("---")
+            
+            # Action Buttons
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("Train Models", use_container_width=True, 
+                           disabled=st.session_state.df_features is None,
+                           key="train_btn_sidebar"):
+                    self.train_models()
+            
+            with col2:
+                if st.button("Detect Anomalies", use_container_width=True,
+                           disabled=st.session_state.df_features is None,
+                           key="anomaly_btn_sidebar"):
+                    self.detect_anomalies()
+        
+        st.markdown("---")
+        
+        # Info
+        st.markdown("""
+        <div style='font-size: 0.8rem; color: var(--text-color-secondary);'>
+        <p><strong>Supported Format:</strong> CSV</p>
+        <p><strong>Required Columns:</strong> Date, Open, High, Low, Close, Volume</p>
+        <p><strong>Max Size:</strong> 200,000 rows</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    def render_sidebar_toggle(self):
+        """Render sidebar toggle button"""
+        # Toggle button for sidebar
+        st.markdown("""
+        <button id="customSidebarToggle" class="sidebar-toggle" onclick="toggleSidebar()">
+            ☰
+        </button>
+        
+        <script>
+        function toggleSidebar() {
+            // Send message to Streamlit to toggle sidebar state
+            const event = new CustomEvent('toggle-sidebar');
+            window.parent.document.dispatchEvent(event);
+        }
+        
+        // Listen for messages from Streamlit
+        window.addEventListener('message', function(event) {
+            if (event.data === 'toggle-sidebar') {
+                // This would need to communicate with Streamlit backend
+                // For now, we'll use a simpler approach
+                const sidebar = document.querySelector('.custom-sidebar');
+                const overlay = document.querySelector('.custom-sidebar-overlay');
+                
+                if (sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    overlay.classList.remove('open');
+                } else {
+                    sidebar.classList.add('open');
+                    overlay.classList.add('open');
+                }
+            }
+        });
+        </script>
+        """, unsafe_allow_html=True)
     
     def render_sidebar(self):
         """Render elegant sidebar with upload and controls"""
@@ -349,6 +565,16 @@ class FinancialAnalyticsDashboard:
             <p><strong>Max Size:</strong> 200,000 rows</p>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Sidebar Help
+            st.markdown("---")
+            st.markdown("""
+            <div style='font-size: 0.8rem; color: var(--text-color-secondary); padding: 0.5rem;'>
+            <p><strong>Sidebar Tips:</strong></p>
+            <p>• Click the ☰ icon in top-left to toggle sidebar</p>
+            <p>• Or press [ to open/close sidebar</p>
+            </div>
+            """, unsafe_allow_html=True)
     
     def train_models(self):
         """Train machine learning models"""
@@ -391,6 +617,9 @@ class FinancialAnalyticsDashboard:
     
     def render_upload_screen(self):
         """Render clean upload interface - Left aligned"""
+        # Add sidebar toggle button
+        self.render_sidebar_toggle()
+        
         st.markdown('<div class="upload-screen">', unsafe_allow_html=True)
         
         # Main header
@@ -477,10 +706,25 @@ Date,Open,High,Low,Close,Volume
                 - Interactive visualizations
                 """)
         
+        # Sidebar toggle instructions
+        st.markdown("---")
+        st.markdown("""
+        <div style='background: var(--secondary-background-color); padding: 1rem; border-radius: 10px; border-left: 4px solid #0B3D91;'>
+            <p style='margin: 0; color: var(--text-color);'><strong>Need to access controls?</strong></p>
+            <p style='margin: 0.5rem 0 0 0; color: var(--text-color-secondary); font-size: 0.9rem;'>
+                Click the ☰ button in the top-left corner or use the keyboard shortcut [ to open the sidebar.
+                The sidebar contains data processing, model training, and anomaly detection controls.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
         st.markdown('</div>', unsafe_allow_html=True)
     
     def render_dashboard(self):
         """Render main dashboard with tabs"""
+        # Add sidebar toggle button
+        self.render_sidebar_toggle()
+        
         # Main header
         st.markdown('<h1 class="dashboard-title">Financial Analytics Dashboard</h1>', unsafe_allow_html=True)
         
@@ -984,8 +1228,11 @@ Date,Open,High,Low,Close,Volume
     
     def run(self):
         """Main application runner"""
-        # Render sidebar
+        # Render native sidebar (always available via Streamlit's hamburger menu)
         self.render_sidebar()
+        
+        # Render custom sidebar if needed
+        self.render_custom_sidebar()
         
         # Main content
         if not st.session_state.data_loaded:
@@ -995,7 +1242,7 @@ Date,Open,High,Low,Close,Volume
 
 # Run the application
 if __name__ == "__main__":
-    # Set page config
+    # Set page config with expanded sidebar
     st.set_page_config(
         page_title="Financial Analytics Platform",
         page_icon="📈",
