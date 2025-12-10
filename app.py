@@ -6,233 +6,479 @@ import plotly.express as px
 from datetime import datetime
 import sys
 import os
+import warnings
+warnings.filterwarnings('ignore')
 
-# Add modules to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-from modules.data_upload import DataUpload
-from modules.data_cleaning import DataCleaning
-from modules.feature_engineering import FeatureEngineering
-from modules.ml_models import MLModels
-from modules.anomaly_detection import AnomalyDetection
-from modules.insights import InsightsGenerator
-
-# Page configuration
-st.set_page_config(
-    page_title="Financial Analytics Platform",
-    page_icon="📈",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-# Custom CSS for professional styling
+# Custom CSS for professional, elegant design
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.5rem;
-        color: #0B3D91;
+    /* Main container styling */
+    .main {
+        padding: 0rem 1rem;
+    }
+    
+    /* Headers */
+    .dashboard-title {
+        font-size: 2.2rem;
         font-weight: 700;
-        margin-bottom: 1rem;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+        border-bottom: 2px solid var(--primary-color);
+        padding-bottom: 0.5rem;
     }
-    .sub-header {
+    
+    .section-title {
         font-size: 1.5rem;
-        color: #0B3D91;
         font-weight: 600;
-        margin-top: 1.5rem;
-        margin-bottom: 1rem;
+        color: var(--text-color);
+        margin: 1.5rem 0 1rem 0;
     }
+    
+    .subsection-title {
+        font-size: 1.2rem;
+        font-weight: 500;
+        color: var(--text-color);
+        margin: 1rem 0 0.5rem 0;
+    }
+    
+    /* Cards */
     .metric-card {
-        background-color: #f8f9fa;
+        background: var(--background-color);
+        border-radius: 10px;
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #0B3D91;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-left: 4px solid var(--primary-color);
         margin-bottom: 1rem;
     }
+    
     .insight-card {
-        background-color: #fff3cd;
+        background: var(--secondary-background-color);
+        border-radius: 10px;
         padding: 1rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid #FFD700;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.75rem;
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s;
     }
-    .anomaly-card {
-        background-color: #f8d7da;
-        padding: 1rem;
-        border-radius: 0.5rem;
+    
+    .insight-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .anomaly-highlight {
+        background: linear-gradient(135deg, #fff3f3 0%, #fff8f8 100%);
         border-left: 4px solid #dc3545;
-        margin-bottom: 0.5rem;
     }
+    
+    .success-highlight {
+        background: linear-gradient(135deg, #f3fff7 0%, #f8fffb 100%);
+        border-left: 4px solid #28a745;
+    }
+    
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 2px;
+        gap: 8px;
     }
+    
     .stTabs [data-baseweb="tab"] {
-        height: 50px;
-        white-space: pre-wrap;
-        background-color: #f8f9fa;
-        border-radius: 4px 4px 0px 0px;
-        gap: 1px;
-        padding-top: 10px;
-        padding-bottom: 10px;
+        height: 45px;
+        padding: 10px 16px;
+        background: var(--secondary-background-color);
+        border-radius: 6px;
+        font-weight: 500;
+        border: 1px solid var(--border-color);
     }
+    
+    .stTabs [data-baseweb="tab"]:hover {
+        background: var(--background-color);
+    }
+    
     .stTabs [aria-selected="true"] {
-        background-color: #0B3D91;
-        color: white;
+        background: var(--primary-color) !important;
+        color: white !important;
+        border-color: var(--primary-color) !important;
     }
+    
+    /* Buttons */
+    .stButton > button {
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Upload area */
+    .upload-area {
+        border: 2px dashed var(--border-color);
+        border-radius: 10px;
+        padding: 3rem 1rem;
+        text-align: center;
+        background: var(--secondary-background-color);
+        margin: 1rem 0;
+        transition: all 0.3s;
+    }
+    
+    .upload-area:hover {
+        border-color: var(--primary-color);
+        background: var(--background-color);
+    }
+    
+    /* Data table */
+    .dataframe {
+        border-radius: 8px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+    
+    /* Status indicators */
+    .status-indicator {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-success {
+        background-color: #28a745;
+    }
+    
+    .status-processing {
+        background-color: #ffc107;
+        animation: pulse 2s infinite;
+    }
+    
+    .status-error {
+        background-color: #dc3545;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
+    
+    /* Hide Streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+# Import modules
+sys.path.append('modules')
+
+from data_upload import DataUploader
+from data_processing import DataProcessor
+from feature_engineering import FeatureEngineer
+from ml_pipeline import MLPipeline
+from anomaly_detector import AnomalyDetector
+from insights_generator import InsightsGenerator
+
 class FinancialAnalyticsDashboard:
     def __init__(self):
-        self.data_upload = DataUpload()
-        self.data_cleaning = DataCleaning()
-        self.feature_engineering = FeatureEngineering()
-        self.ml_models = MLModels()
-        self.anomaly_detection = AnomalyDetection()
-        self.insights_generator = InsightsGenerator()
+        """Initialize dashboard components"""
+        self.uploader = DataUploader()
+        self.processor = DataProcessor()
+        self.feature_engineer = FeatureEngineer()
+        self.ml_pipeline = MLPipeline()
+        self.anomaly_detector = AnomalyDetector()
+        self.insights_gen = InsightsGenerator()
         
-        self.df_raw = None
-        self.df_clean = None
-        self.df_features = None
-        self.df_targets = None
-        self.df_anomalies = None
-        self.model_results = {}
-        self.insights = []
-        
-    def run(self):
-        """Main application flow"""
-        # Header
-        st.markdown('<h1 class="main-header">Financial Analytics Platform</h1>', unsafe_allow_html=True)
-        st.markdown("""
-        <div style='color: #666; margin-bottom: 2rem;'>
-        Enterprise-grade platform for financial market prediction and anomaly detection. 
-        Upload CSV data to generate predictions, detect anomalies, and gain AI-driven insights.
-        </div>
-        """, unsafe_allow_html=True)
-        
-        # Sidebar
-        with st.sidebar:
-            st.markdown("### Configuration")
-            
-            # Data upload
-            success, df_raw = self.data_upload.upload_csv()
-            if success:
-                self.df_raw = df_raw
-                
-                # Data cleaning
-                with st.spinner("Cleaning data..."):
-                    self.df_clean = self.data_cleaning.clean_data(self.df_raw)
-                
-                # Feature engineering
-                with st.spinner("Generating features..."):
-                    self.df_features = self.feature_engineering.create_features(self.df_clean)
-                    self.df_targets = self.feature_engineering.get_target_variables(self.df_features)
-                
-                st.sidebar.success("Data processed successfully")
-                
-                # Display data info
-                st.sidebar.markdown("---")
-                st.sidebar.markdown("### Data Summary")
-                if 'date' in self.df_clean.columns:
-                    st.sidebar.write(f"**Period:** {self.df_clean['date'].min().date()} to {self.df_clean['date'].max().date()}")
-                st.sidebar.write(f"**Data Points:** {len(self.df_clean):,}")
-                st.sidebar.write(f"**Features Generated:** {len(self.df_features.columns)}")
-        
-        # Main content tabs
-        if self.df_clean is not None:
-            tab1, tab2, tab3, tab4, tab5 = st.tabs([
-                "Overview", 
-                "Model Predictions", 
-                "Feature Analysis", 
-                "Anomaly Detection",
-                "Export Data"
-            ])
-            
-            with tab1:
-                self._render_overview_tab()
-            
-            with tab2:
-                self._render_predictions_tab()
-            
-            with tab3:
-                self._render_feature_analysis_tab()
-            
-            with tab4:
-                self._render_anomaly_tab()
-            
-            with tab5:
-                self._render_export_tab()
-        else:
-            st.info("Please upload a CSV file or use sample data to begin analysis.")
-            
-            # Display sample data format
-            st.markdown("### Expected Data Format")
-            st.code("""
-            Column names should include:
-            - Date (or similar datetime column)
-            - Open (opening price)
-            - High (daily high)
-            - Low (daily low)
-            - Close (closing price)
-            - Volume (trading volume)
-            
-            Example:
-            Date,Open,High,Low,Close,Volume
-            2023-01-01,100.0,102.5,99.5,101.2,1000000
-            2023-01-02,101.2,103.0,100.5,102.8,1200000
-            """)
+        # Initialize session state
+        if 'data_loaded' not in st.session_state:
+            st.session_state.data_loaded = False
+        if 'current_step' not in st.session_state:
+            st.session_state.current_step = 0
+        if 'df_raw' not in st.session_state:
+            st.session_state.df_raw = None
+        if 'df_processed' not in st.session_state:
+            st.session_state.df_processed = None
+        if 'df_features' not in st.session_state:
+            st.session_state.df_features = None
+        if 'models_trained' not in st.session_state:
+            st.session_state.models_trained = False
+        if 'anomalies_detected' not in st.session_state:
+            st.session_state.anomalies_detected = False
     
-    def _render_overview_tab(self):
-        """Render overview tab with charts and insights"""
-        st.markdown('<h2 class="sub-header">Market Overview</h2>', unsafe_allow_html=True)
-        
-        col1, col2, col3, col4 = st.columns(4)
-        
-        with col1:
-            if 'close' in self.df_clean.columns:
-                current_price = self.df_clean['close'].iloc[-1]
-                price_change = ((self.df_clean['close'].iloc[-1] / self.df_clean['close'].iloc[0]) - 1) * 100
-                st.metric("Current Price", f"${current_price:.2f}", f"{price_change:.2f}%")
-        
-        with col2:
-            if 'volume' in self.df_clean.columns:
-                avg_volume = self.df_clean['volume'].mean()
-                st.metric("Avg Daily Volume", f"{avg_volume:,.0f}")
-        
-        with col3:
-            if 'daily_return' in self.df_features.columns:
-                avg_return = self.df_features['daily_return'].mean() * 100
-                st.metric("Avg Daily Return", f"{avg_return:.2f}%")
-        
-        with col4:
-            if 'volatility_20' in self.df_features.columns:
-                current_vol = self.df_features['volatility_20'].iloc[-1] * 100
-                st.metric("Current Volatility", f"{current_vol:.2f}%")
-        
-        # Charts
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Price chart
-            st.markdown("#### Price Trend")
-            fig = go.Figure()
+    def render_sidebar(self):
+        """Render elegant sidebar with upload and controls"""
+        with st.sidebar:
+            # Logo/Title
+            st.markdown("""
+            <div style='text-align: center; margin-bottom: 2rem;'>
+                <h2 style='color: var(--primary-color); margin: 0;'></h2>
+                <h3 style='margin: 0.5rem 0;'>Finance Analytics</h3>
+                <p style='color: var(--text-color-secondary); font-size: 0.9rem;'>Enterprise Prediction Platform</p>
+            </div>
+            """, unsafe_allow_html=True)
             
-            if 'close' in self.df_clean.columns and 'date' in self.df_clean.columns:
-                fig.add_trace(go.Scatter(
-                    x=self.df_clean['date'],
-                    y=self.df_clean['close'],
-                    mode='lines',
-                    name='Close Price',
-                    line=dict(color='#0B3D91', width=2)
-                ))
+            st.markdown("---")
+            
+            # Upload Section
+            st.markdown("###  Data Upload")
+            
+            uploaded_file = st.file_uploader(
+                "Upload your financial CSV file",
+                type=['csv'],
+                help="Upload time series data with columns like Date, Open, High, Low, Close, Volume",
+                key="file_uploader"
+            )
+            
+            if uploaded_file is not None:
+                if st.button(" Process Data", type="primary", use_container_width=True):
+                    with st.spinner("Processing data..."):
+                        try:
+                            # Load data
+                            st.session_state.df_raw = pd.read_csv(uploaded_file)
+                            st.session_state.data_loaded = True
+                            
+                            # Process data
+                            st.session_state.df_processed = self.processor.process(st.session_state.df_raw)
+                            
+                            # Engineer features
+                            st.session_state.df_features = self.feature_engineer.create_features(
+                                st.session_state.df_processed
+                            )
+                            
+                            st.success("Data processed successfully")
+                            
+                        except Exception as e:
+                            st.error(f"Error processing data: {str(e)}")
+            
+            st.markdown("---")
+            
+            # Pipeline Status
+            if st.session_state.data_loaded:
+                st.markdown("###  Pipeline Status")
                 
-                # Add moving averages if available
-                if 'sma_20' in self.df_features.columns:
+                status_items = [
+                    ("Data Loaded", st.session_state.data_loaded, ""),
+                    ("Data Processed", st.session_state.df_processed is not None, ""),
+                    ("Features Engineered", st.session_state.df_features is not None, ""),
+                    ("Models Trained", st.session_state.models_trained, ""),
+                    ("Anomalies Detected", st.session_state.anomalies_detected, "")
+                ]
+                
+                for item, status, icon in status_items:
+                    color = "green" if status else "gray"
+                    st.markdown(f"{icon} <span style='color: {color};'>{item}</span>", 
+                              unsafe_allow_html=True)
+                
+                st.markdown("---")
+                
+                # Action Buttons
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("Train Models", use_container_width=True):
+                        self.train_models()
+                
+                with col2:
+                    if st.button("Detect Anomalies", use_container_width=True):
+                        self.detect_anomalies()
+            
+            st.markdown("---")
+            
+            # Info
+            st.markdown("""
+            <div style='font-size: 0.8rem; color: var(--text-color-secondary);'>
+            <p><strong>Supported Format:</strong> CSV</p>
+            <p><strong>Required Columns:</strong> Date, Open, High, Low, Close, Volume</p>
+            <p><strong>Max Size:</strong> 200,000 rows</p>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    def train_models(self):
+        """Train machine learning models"""
+        with st.spinner("Training ML models..."):
+            try:
+                if st.session_state.df_features is not None:
+                    # Prepare data for ML
+                    X_train, X_test, y_train, y_test = self.ml_pipeline.prepare_data(
+                        st.session_state.df_features
+                    )
+                    
+                    # Train all models
+                    self.ml_pipeline.train_all_models(X_train, X_test, y_train, y_test)
+                    st.session_state.models_trained = True
+                    st.success(" Models trained successfully")
+                    
+                    # Generate insights
+                    self.insights = self.insights_gen.generate_insights(
+                        st.session_state.df_features,
+                        self.ml_pipeline.get_results()
+                    )
+                    
+            except Exception as e:
+                st.error(f"Error training models: {str(e)}")
+    
+    def detect_anomalies(self):
+        """Detect anomalies in the data"""
+        with st.spinner("Detecting anomalies..."):
+            try:
+                if st.session_state.df_features is not None:
+                    self.anomalies = self.anomaly_detector.detect(
+                        st.session_state.df_features
+                    )
+                    st.session_state.anomalies_detected = True
+                    st.success(" Anomalies detected successfully")
+            except Exception as e:
+                st.error(f"Error detecting anomalies: {str(e)}")
+    
+    def render_upload_screen(self):
+        """Render clean upload interface"""
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            st.markdown('<div class="upload-area">', unsafe_allow_html=True)
+            
+            st.markdown("""
+            <div style='margin-bottom: 2rem;'>
+                <h2 style='color: var(--primary-color);'> Financial Analytics Platform</h2>
+                <p style='color: var(--text-color-secondary);'>
+                    Upload your financial time series data to generate predictions, 
+                    detect anomalies, and gain AI-driven insights.
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            uploaded_file = st.file_uploader(
+                "Drag and drop your CSV file here",
+                type=['csv'],
+                key="main_uploader",
+                label_visibility="collapsed"
+            )
+            
+            if uploaded_file is not None:
+                st.info(f" {uploaded_file.name} ready for processing")
+                
+                if st.button("Begin Analysis", type="primary", use_container_width=True):
+                    with st.spinner("Loading and processing data..."):
+                        try:
+                            st.session_state.df_raw = pd.read_csv(uploaded_file)
+                            st.session_state.data_loaded = True
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Error reading file: {str(e)}")
+            
+            st.markdown("""
+            <div style='margin-top: 2rem; color: var(--text-color-secondary); font-size: 0.9rem;'>
+                <p><strong>Example CSV format:</strong></p>
+                <pre style='background: var(--secondary-background-color); padding: 1rem; border-radius: 5px;'>
+Date,Open,High,Low,Close,Volume
+2023-01-01,100.0,102.5,99.5,101.2,1000000
+2023-01-02,101.2,103.0,100.5,102.8,1200000</pre>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+    
+    def render_dashboard(self):
+        """Render main dashboard with tabs"""
+        # Main header
+        st.markdown('<h1 class="dashboard-title">Financial Analytics Dashboard</h1>', unsafe_allow_html=True)
+        
+        # Summary metrics
+        self.render_summary_metrics()
+        
+        # Tabs
+        tab1, tab2, tab3, tab4, tab5 = st.tabs([
+            "Overview", 
+            "Predictions", 
+            "Analysis", 
+            "Anomalies",
+            "Export"
+        ])
+        
+        with tab1:
+            self.render_overview_tab()
+        
+        with tab2:
+            self.render_predictions_tab()
+        
+        with tab3:
+            self.render_analysis_tab()
+        
+        with tab4:
+            self.render_anomalies_tab()
+        
+        with tab5:
+            self.render_export_tab()
+    
+    def render_summary_metrics(self):
+        """Render summary metrics cards"""
+        if st.session_state.df_processed is not None:
+            df = st.session_state.df_processed
+            
+            col1, col2, col3, col4 = st.columns(4)
+            
+            with col1:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                st.metric("Data Points", f"{len(df):,}")
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col2:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                if 'close' in df.columns:
+                    current = df['close'].iloc[-1]
+                    first = df['close'].iloc[0]
+                    change = ((current - first) / first) * 100
+                    st.metric("Total Return", f"{change:.1f}%", f"${current:.2f}")
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col3:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                if 'volume' in df.columns:
+                    avg_volume = df['volume'].mean()
+                    st.metric("Avg Volume", f"{avg_volume:,.0f}")
+                st.markdown('</div>', unsafe_allow_html=True)
+            
+            with col4:
+                st.markdown('<div class="metric-card">', unsafe_allow_html=True)
+                if 'date' in df.columns:
+                    start = df['date'].min()
+                    end = df['date'].max()
+                    days = (end - start).days
+                    st.metric("Period", f"{days} days")
+                st.markdown('</div>', unsafe_allow_html=True)
+    
+    def render_overview_tab(self):
+        """Render overview tab"""
+        if st.session_state.df_processed is None:
+            st.info("Please upload and process data first")
+            return
+        
+        df = st.session_state.df_processed
+        
+        # Price Chart
+        st.markdown('<h3 class="section-title">Price Analysis</h3>', unsafe_allow_html=True)
+        
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            if 'close' in df.columns and 'date' in df.columns:
+                fig = go.Figure()
+                
+                # Candlestick if we have OHLC data
+                if all(col in df.columns for col in ['open', 'high', 'low', 'close']):
+                    fig.add_trace(go.Candlestick(
+                        x=df['date'],
+                        open=df['open'],
+                        high=df['high'],
+                        low=df['low'],
+                        close=df['close'],
+                        name='Price'
+                    ))
+                else:
                     fig.add_trace(go.Scatter(
-                        x=self.df_clean['date'],
-                        y=self.df_features['sma_20'],
+                        x=df['date'],
+                        y=df['close'],
                         mode='lines',
-                        name='20-Day SMA',
-                        line=dict(color='#FFD700', width=1, dash='dash')
+                        name='Close Price',
+                        line=dict(width=2)
                     ))
                 
                 fig.update_layout(
@@ -240,439 +486,417 @@ class FinancialAnalyticsDashboard:
                     xaxis_title="Date",
                     yaxis_title="Price",
                     hovermode='x unified',
+                    template='plotly_white',
+                    showlegend=True,
+                    xaxis_rangeslider_visible=False
+                )
+                st.plotly_chart(fig, use_container_width=True)
+        
+        with col2:
+            st.markdown('<div class="insight-card success-highlight">', unsafe_allow_html=True)
+            st.markdown("### Quick Stats")
+            
+            if 'close' in df.columns:
+                returns = df['close'].pct_change().dropna()
+                st.markdown(f"**Avg Daily Return:** {returns.mean()*100:.2f}%")
+                st.markdown(f"**Volatility:** {returns.std()*100:.2f}%")
+                st.markdown(f"**Sharpe Ratio:** {returns.mean()/returns.std():.2f}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Volume Chart
+        st.markdown('<h3 class="section-title">Volume Analysis</h3>', unsafe_allow_html=True)
+        
+        if 'volume' in df.columns:
+            fig = go.Figure()
+            fig.add_trace(go.Bar(
+                x=df['date'],
+                y=df['volume'],
+                name='Volume',
+                marker_color='rgba(0, 100, 255, 0.7)'
+            ))
+            
+            fig.update_layout(
+                height=300,
+                xaxis_title="Date",
+                yaxis_title="Volume",
+                hovermode='x unified',
+                template='plotly_white'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # AI Insights
+        if hasattr(self, 'insights'):
+            st.markdown('<h3 class="section-title">AI Insights</h3>', unsafe_allow_html=True)
+            
+            for insight in self.insights[:3]:  # Show top 3 insights
+                st.markdown(f'<div class="insight-card">{insight}</div>', unsafe_allow_html=True)
+    
+    def render_predictions_tab(self):
+        """Render predictions tab"""
+        if not st.session_state.models_trained:
+            st.info("Please train models first using the sidebar")
+            return
+        
+        results = self.ml_pipeline.get_results()
+        
+        st.markdown('<h3 class="section-title">Model Performance</h3>', unsafe_allow_html=True)
+        
+        # Model comparison table
+        perf_data = []
+        for model_name, result in results.items():
+            metrics = result['metrics']
+            perf_data.append({
+                'Model': model_name.replace('_', ' ').title(),
+                'RMSE': f"{metrics.get('test_rmse', 0):.4f}",
+                'MAE': f"{metrics.get('test_mae', 0):.4f}",
+                'R²': f"{metrics.get('test_r2', 0):.4f}",
+                'Accuracy': f"{metrics.get('test_accuracy', 0):.4f}"
+            })
+        
+        perf_df = pd.DataFrame(perf_data)
+        st.dataframe(perf_df, use_container_width=True)
+        
+        # Prediction visualization
+        st.markdown('<h3 class="section-title">Predictions vs Actual</h3>', unsafe_allow_html=True)
+        
+        model_options = list(results.keys())
+        selected_model = st.selectbox(
+            "Select Model to Visualize",
+            model_options,
+            format_func=lambda x: x.replace('_', ' ').title()
+        )
+        
+        if selected_model in results:
+            result = results[selected_model]
+            
+            fig = go.Figure()
+            
+            # Plot actual vs predicted
+            fig.add_trace(go.Scatter(
+                y=result['actual'][-50:],  # Last 50 points
+                mode='lines',
+                name='Actual',
+                line=dict(width=2)
+            ))
+            
+            fig.add_trace(go.Scatter(
+                y=result['predictions'][-50:],
+                mode='lines',
+                name='Predicted',
+                line=dict(dash='dash', width=2)
+            ))
+            
+            fig.update_layout(
+                height=400,
+                xaxis_title="Time Step",
+                yaxis_title="Value",
+                hovermode='x unified',
+                template='plotly_white',
+                legend=dict(
+                    orientation="h",
+                    yanchor="bottom",
+                    y=1.02,
+                    xanchor="right",
+                    x=1
+                )
+            )
+            
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def render_analysis_tab(self):
+        """Render analysis tab"""
+        if st.session_state.df_features is None:
+            st.info("Please process data first")
+            return
+        
+        df = st.session_state.df_features
+        
+        st.markdown('<h3 class="section-title">Technical Indicators</h3>', unsafe_allow_html=True)
+        
+        # Technical indicators visualization
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            # RSI
+            if 'rsi_14' in df.columns:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=df['date'] if 'date' in df.columns else df.index,
+                    y=df['rsi_14'],
+                    mode='lines',
+                    name='RSI (14)',
+                    line=dict(width=2)
+                ))
+                
+                # Overbought/oversold lines
+                fig.add_hline(y=70, line_dash="dash", line_color="red", annotation_text="Overbought")
+                fig.add_hline(y=30, line_dash="dash", line_color="green", annotation_text="Oversold")
+                
+                fig.update_layout(
+                    height=300,
+                    xaxis_title="Date",
+                    yaxis_title="RSI",
                     template='plotly_white'
                 )
                 st.plotly_chart(fig, use_container_width=True)
         
         with col2:
-            # Volume chart
-            st.markdown("#### Trading Volume")
-            if 'volume' in self.df_clean.columns:
+            # MACD
+            if all(col in df.columns for col in ['macd', 'macd_signal']):
                 fig = go.Figure()
-                fig.add_trace(go.Bar(
-                    x=self.df_clean['date'],
-                    y=self.df_clean['volume'],
-                    name='Volume',
-                    marker_color='#666'
+                
+                fig.add_trace(go.Scatter(
+                    x=df['date'] if 'date' in df.columns else df.index,
+                    y=df['macd'],
+                    mode='lines',
+                    name='MACD',
+                    line=dict(width=2)
                 ))
                 
-                if 'volume_sma' in self.df_features.columns:
-                    fig.add_trace(go.Scatter(
-                        x=self.df_clean['date'],
-                        y=self.df_features['volume_sma'],
-                        mode='lines',
-                        name='20-Day Avg Volume',
-                        line=dict(color='#FFD700', width=2)
+                fig.add_trace(go.Scatter(
+                    x=df['date'] if 'date' in df.columns else df.index,
+                    y=df['macd_signal'],
+                    mode='lines',
+                    name='Signal',
+                    line=dict(width=2)
+                ))
+                
+                # Histogram
+                if 'macd_diff' in df.columns:
+                    colors = ['green' if val > 0 else 'red' for val in df['macd_diff']]
+                    fig.add_trace(go.Bar(
+                        x=df['date'] if 'date' in df.columns else df.index,
+                        y=df['macd_diff'],
+                        name='Histogram',
+                        marker_color=colors,
+                        opacity=0.3
                     ))
                 
                 fig.update_layout(
-                    height=400,
+                    height=300,
                     xaxis_title="Date",
-                    yaxis_title="Volume",
-                    hovermode='x unified',
+                    yaxis_title="MACD",
                     template='plotly_white'
                 )
                 st.plotly_chart(fig, use_container_width=True)
         
-        # AI Insights
-        st.markdown("---")
-        st.markdown('<h2 class="sub-header">AI-Generated Insights</h2>', unsafe_allow_html=True)
-        
-        # Generate insights if not already generated
-        if not self.insights:
-            with st.spinner("Generating insights..."):
-                # Train models and detect anomalies first
-                self._train_models()
-                self._detect_anomalies()
-                self.insights = self.insights_generator.generate_insights(
-                    self.df_features, 
-                    self.ml_models.results,
-                    self.df_anomalies
-                )
-        
-        # Display insights
-        for insight in self.insights[:5]:  # Show top 5 insights
-            st.markdown(f'<div class="insight-card">{insight}</div>', unsafe_allow_html=True)
-    
-    def _train_models(self):
-        """Train all ML models"""
-        with st.spinner("Training machine learning models..."):
-            # Prepare data
-            X_train, X_test, y_train, y_test, feature_names = self.ml_models.prepare_data(
-                self.df_targets, target_type='regression'
-            )
-            self.ml_models.feature_names = feature_names
+        # Feature Importance
+        if st.session_state.models_trained:
+            st.markdown('<h3 class="section-title">Feature Importance</h3>', unsafe_allow_html=True)
             
-            # Train models
-            self.ml_models.train_linear_regression(X_train, X_test, y_train, y_test)
-            
-            # Prepare classification data
-            X_train_clf, X_test_clf, y_train_clf, y_test_clf, _ = self.ml_models.prepare_data(
-                self.df_targets, target_type='classification'
-            )
-            self.ml_models.train_knn_classifier(X_train_clf, X_test_clf, y_train_clf, y_test_clf)
-            
-            # Train neural network
-            X_train_nn, X_test_nn, y_train_nn, y_test_nn, _ = self.ml_models.prepare_data(
-                self.df_targets, target_type='return'
-            )
-            self.ml_models.train_neural_network(X_train_nn, X_test_nn, y_train_nn, y_test_nn)
-            
-            # Train gradient boosted trees
-            self.ml_models.train_gradient_boosted_trees(X_train, X_test, y_train, y_test, 'regression')
-    
-    def _detect_anomalies(self):
-        """Detect anomalies in the data"""
-        with st.spinner("Detecting anomalies..."):
-            self.df_anomalies = self.anomaly_detection.detect_anomalies(self.df_features)
-    
-    def _render_predictions_tab(self):
-        """Render model predictions tab"""
-        st.markdown('<h2 class="sub-header">Model Predictions</h2>', unsafe_allow_html=True)
-        
-        # Ensure models are trained
-        if not self.ml_models.results:
-            self._train_models()
-        
-        # Model selection
-        model_options = list(self.ml_models.results.keys())
-        selected_model = st.selectbox("Select Model", model_options, format_func=lambda x: x.replace('_', ' ').title())
-        
-        if selected_model in self.ml_models.results:
-            results = self.ml_models.results[selected_model]
-            
-            # Display metrics
-            col1, col2, col3 = st.columns(3)
-            
-            metrics = results['metrics']
-            for metric_name, metric_value in metrics.items():
-                if 'test_' in metric_name:
-                    display_name = metric_name.replace('test_', '').upper()
-                    col1.metric(display_name, f"{metric_value:.4f}")
-            
-            # Prediction vs Actual chart
-            st.markdown("#### Predictions vs Actual")
-            
-            # Create date range for test predictions
-            test_size = len(results['predictions'])
-            if 'date' in self.df_clean.columns:
-                dates = self.df_clean['date'].iloc[-test_size:]
-            else:
-                dates = range(test_size)
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=dates,
-                y=results['actual'],
-                mode='lines',
-                name='Actual',
-                line=dict(color='#0B3D91', width=2)
-            ))
-            fig.add_trace(go.Scatter(
-                x=dates,
-                y=results['predictions'],
-                mode='lines',
-                name='Predicted',
-                line=dict(color='#FFD700', width=2, dash='dash')
-            ))
-            
-            fig.update_layout(
-                height=500,
-                xaxis_title="Date",
-                yaxis_title="Value",
-                hovermode='x unified',
-                template='plotly_white',
-                legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
-            )
-            st.plotly_chart(fig, use_container_width=True)
-            
-            # Residuals plot
-            st.markdown("#### Prediction Residuals")
-            residuals = results['actual'] - results['predictions']
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=dates,
-                y=residuals,
-                mode='markers',
-                name='Residuals',
-                marker=dict(color='#666', size=8)
-            ))
-            fig.add_hline(y=0, line_dash="dash", line_color="red")
-            
-            fig.update_layout(
-                height=400,
-                xaxis_title="Date",
-                yaxis_title="Residual (Actual - Predicted)",
-                template='plotly_white'
-            )
-            st.plotly_chart(fig, use_container_width=True)
-    
-    def _render_feature_analysis_tab(self):
-        """Render feature analysis tab"""
-        st.markdown('<h2 class="sub-header">Feature Analysis</h2>', unsafe_allow_html=True)
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            # Feature importance
-            st.markdown("#### Top Feature Importance")
-            
-            # Get feature importance from gradient boosted model
-            if 'gradient_boosted_regression' in self.ml_models.feature_importance:
-                importance_df = self.ml_models.feature_importance['gradient_boosted_regression'].head(10)
-                
+            importance = self.ml_pipeline.get_feature_importance()
+            if importance is not None:
                 fig = go.Figure()
+                
+                # Get top 10 features
+                top_features = importance.head(10)
+                
                 fig.add_trace(go.Bar(
-                    x=importance_df['importance'],
-                    y=importance_df['feature'],
+                    x=top_features['importance'],
+                    y=top_features['feature'],
                     orientation='h',
-                    marker_color='#0B3D91'
+                    marker_color='rgba(0, 100, 255, 0.7)'
                 ))
                 
                 fig.update_layout(
-                    height=500,
+                    height=400,
                     xaxis_title="Importance",
                     yaxis_title="Feature",
                     template='plotly_white'
                 )
-                st.plotly_chart(fig, use_container_width=True)
-        
-        with col2:
-            # Correlation heatmap
-            st.markdown("#### Feature Correlation")
-            
-            # Select top features for correlation
-            numeric_cols = self.df_features.select_dtypes(include=[np.number]).columns.tolist()
-            top_features = numeric_cols[:10]  # First 10 numeric features
-            
-            if len(top_features) > 1:
-                corr_matrix = self.df_features[top_features].corr()
                 
-                fig = go.Figure(data=go.Heatmap(
-                    z=corr_matrix.values,
-                    x=corr_matrix.columns,
-                    y=corr_matrix.columns,
-                    colorscale='RdBu',
-                    zmin=-1,
-                    zmax=1,
-                    text=corr_matrix.round(2).values,
-                    texttemplate='%{text}',
-                    textfont={"size": 10}
-                ))
-                
-                fig.update_layout(
-                    height=500,
-                    xaxis_title="Features",
-                    yaxis_title="Features",
-                    template='plotly_white'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        
-        # Rolling returns distribution
-        st.markdown("---")
-        st.markdown("#### Returns Distribution")
-        
-        if 'daily_return' in self.df_features.columns:
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                # Histogram
-                fig = go.Figure()
-                fig.add_trace(go.Histogram(
-                    x=self.df_features['daily_return'].dropna(),
-                    nbinsx=50,
-                    marker_color='#0B3D91',
-                    opacity=0.7
-                ))
-                
-                fig.update_layout(
-                    height=400,
-                    xaxis_title="Daily Return",
-                    yaxis_title="Frequency",
-                    template='plotly_white'
-                )
-                st.plotly_chart(fig, use_container_width=True)
-            
-            with col2:
-                # Box plot
-                fig = go.Figure()
-                fig.add_trace(go.Box(
-                    y=self.df_features['daily_return'].dropna(),
-                    name='Returns',
-                    boxpoints='outliers',
-                    marker_color='#0B3D91'
-                ))
-                
-                fig.update_layout(
-                    height=400,
-                    yaxis_title="Daily Return",
-                    template='plotly_white'
-                )
                 st.plotly_chart(fig, use_container_width=True)
     
-    def _render_anomaly_tab(self):
-        """Render anomaly detection tab"""
-        st.markdown('<h2 class="sub-header">Anomaly Detection</h2>', unsafe_allow_html=True)
+    def render_anomalies_tab(self):
+        """Render anomalies tab"""
+        if not st.session_state.anomalies_detected:
+            st.info("Please detect anomalies first using the sidebar")
+            return
         
-        # Ensure anomalies are detected
-        if self.df_anomalies is None:
-            self._detect_anomalies()
+        if not hasattr(self, 'anomalies'):
+            st.error("Anomalies not detected. Please run detection first.")
+            return
+        
+        df_anomalies = self.anomalies
+        
+        st.markdown('<h3 class="section-title">Anomaly Detection Results</h3>', unsafe_allow_html=True)
         
         # Anomaly summary
-        anomaly_summary = self.anomaly_detection.get_anomaly_summary(self.df_anomalies)
+        anomaly_count = df_anomalies['is_anomaly'].sum()
+        total_count = len(df_anomalies)
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Total Anomalies", f"{anomaly_summary['anomaly_count']}")
+            st.metric("Anomalies Detected", f"{anomaly_count}")
         
         with col2:
-            st.metric("Anomaly Rate", f"{anomaly_summary['anomaly_percentage']}%")
+            st.metric("Anomaly Rate", f"{(anomaly_count/total_count)*100:.1f}%")
         
         with col3:
-            st.metric("Most Common Type", anomaly_summary['most_common_type'])
-        
-        with col4:
-            st.metric("Max Confidence", f"{anomaly_summary['max_anomaly_score']:.1%}")
+            if 'anomaly_confidence' in df_anomalies.columns:
+                avg_confidence = df_anomalies['anomaly_confidence'].mean()
+                st.metric("Avg Confidence", f"{avg_confidence:.1%}")
         
         # Anomaly visualization
-        st.markdown("#### Anomaly Timeline")
+        st.markdown('<h3 class="subsection-title">Anomaly Timeline</h3>', unsafe_allow_html=True)
         
-        if 'date' in self.df_anomalies.columns and 'close' in self.df_anomalies.columns:
-            # Create scatter plot with anomalies highlighted
+        if 'close' in df_anomalies.columns:
             fig = go.Figure()
             
-            # Normal points
-            normal_mask = self.df_anomalies['is_anomaly'] == 0
+            # Plot price
             fig.add_trace(go.Scatter(
-                x=self.df_anomalies.loc[normal_mask, 'date'],
-                y=self.df_anomalies.loc[normal_mask, 'close'],
-                mode='markers',
-                name='Normal',
-                marker=dict(color='#0B3D91', size=6, opacity=0.6)
+                x=df_anomalies['date'] if 'date' in df_anomalies.columns else df_anomalies.index,
+                y=df_anomalies['close'],
+                mode='lines',
+                name='Price',
+                line=dict(width=1, color='lightgray')
             ))
             
-            # Anomaly points
-            anomaly_mask = self.df_anomalies['is_anomaly'] == 1
-            if anomaly_mask.any():
+            # Highlight anomalies
+            anomalies = df_anomalies[df_anomalies['is_anomaly'] == 1]
+            if not anomalies.empty:
                 fig.add_trace(go.Scatter(
-                    x=self.df_anomalies.loc[anomaly_mask, 'date'],
-                    y=self.df_anomalies.loc[anomaly_mask, 'close'],
+                    x=anomalies['date'] if 'date' in anomalies.columns else anomalies.index,
+                    y=anomalies['close'],
                     mode='markers',
                     name='Anomaly',
-                    marker=dict(color='#dc3545', size=10, symbol='x')
+                    marker=dict(
+                        size=10,
+                        color='red',
+                        symbol='x'
+                    )
                 ))
             
             fig.update_layout(
-                height=500,
+                height=400,
                 xaxis_title="Date",
                 yaxis_title="Price",
                 hovermode='x unified',
-                template='plotly_white',
-                showlegend=True
+                template='plotly_white'
             )
+            
             st.plotly_chart(fig, use_container_width=True)
         
-        # Anomaly details table
-        st.markdown("#### Anomaly Details")
+        # Anomaly details
+        st.markdown('<h3 class="subsection-title">Anomaly Details</h3>', unsafe_allow_html=True)
         
-        if anomaly_mask.any():
-            anomaly_details = self.df_anomalies[anomaly_mask].copy()
+        if not anomalies.empty:
+            # Select columns to display
+            display_cols = []
+            for col in ['date', 'close', 'volume', 'daily_return', 'anomaly_confidence', 'anomaly_type']:
+                if col in anomalies.columns:
+                    display_cols.append(col)
             
-            # Select relevant columns
-            display_cols = ['date', 'close', 'daily_return', 'volume', 'anomaly_type', 'anomaly_confidence']
-            display_cols = [col for col in display_cols if col in anomaly_details.columns]
-            
-            st.dataframe(
-                anomaly_details[display_cols].sort_values('date', ascending=False),
-                use_container_width=True
-            )
-        
-        # Anomaly insights
-        st.markdown("#### Anomaly Insights")
-        
-        anomaly_insights = [
-            f"Detected {anomaly_summary['anomaly_count']} anomalies representing {anomaly_summary['anomaly_percentage']}% of the dataset.",
-            f"The average anomaly confidence score is {anomaly_summary['avg_anomaly_score']:.1%}.",
-            f"Most common anomaly type: {anomaly_summary['most_common_type']}."
-        ]
-        
-        for insight in anomaly_insights:
-            st.markdown(f'<div class="anomaly-card">{insight}</div>', unsafe_allow_html=True)
+            if display_cols:
+                st.dataframe(
+                    anomalies[display_cols].sort_values('date' if 'date' in anomalies.columns else 'anomaly_confidence', 
+                                                      ascending=False),
+                    use_container_width=True
+                )
     
-    def _render_export_tab(self):
-        """Render data export tab"""
-        st.markdown('<h2 class="sub-header">Export Data</h2>', unsafe_allow_html=True)
+    def render_export_tab(self):
+        """Render export tab"""
+        st.markdown('<h3 class="section-title">Export Data</h3>', unsafe_allow_html=True)
         
-        col1, col2, col3, col4 = st.columns(4)
+        col1, col2 = st.columns(2)
         
-        # Export buttons
         with col1:
-            if st.button("Export Cleaned Data", use_container_width=True):
-                self._download_dataframe(self.df_clean, "cleaned_data.csv")
+            st.markdown("### Available Datasets")
+            
+            datasets = []
+            if st.session_state.df_processed is not None:
+                datasets.append(("Processed Data", st.session_state.df_processed))
+            if st.session_state.df_features is not None:
+                datasets.append(("Features Data", st.session_state.df_features))
+            if hasattr(self, 'anomalies'):
+                datasets.append(("Anomaly Data", self.anomalies))
+            
+            for name, df in datasets:
+                with st.expander(f"{name} ({len(df)} rows)"):
+                    st.dataframe(df.head(10), use_container_width=True)
         
         with col2:
-            if st.button("Export Features", use_container_width=True):
-                self._download_dataframe(self.df_features, "features_data.csv")
-        
-        with col3:
-            if st.button("Export Anomalies", use_container_width=True) and self.df_anomalies is not None:
-                self._download_dataframe(self.df_anomalies, "anomalies_data.csv")
-        
-        with col4:
-            if st.button("Export Model Results", use_container_width=True) and self.ml_models.results:
-                self._export_model_results()
-        
-        # Data preview
-        st.markdown("---")
-        st.markdown("#### Data Preview")
-        
-        dataset_option = st.selectbox(
-            "Select Dataset to Preview",
-            ["Cleaned Data", "Features Data", "Anomaly Data"]
-        )
-        
-        if dataset_option == "Cleaned Data":
-            st.dataframe(self.df_clean.head(20), use_container_width=True)
-        elif dataset_option == "Features Data":
-            st.dataframe(self.df_features.head(20), use_container_width=True)
-        elif dataset_option == "Anomaly Data" and self.df_anomalies is not None:
-            st.dataframe(self.df_anomalies.head(20), use_container_width=True)
-    
-    def _download_dataframe(self, df, filename):
-        """Helper function to download dataframe as CSV"""
-        csv = df.to_csv(index=False)
-        st.download_button(
-            label="Click to Download",
-            data=csv,
-            file_name=filename,
-            mime="text/csv",
-            key=f"download_{filename}"
-        )
-    
-    def _export_model_results(self):
-        """Export model results to CSV"""
-        results_data = []
-        
-        for model_name, results in self.ml_models.results.items():
-            if 'metrics' in results:
-                row = {'Model': model_name}
-                row.update(results['metrics'])
-                results_data.append(row)
-        
-        if results_data:
-            results_df = pd.DataFrame(results_data)
-            csv = results_df.to_csv(index=False)
-            st.download_button(
-                label="Click to Download Model Results",
-                data=csv,
-                file_name="model_results.csv",
-                mime="text/csv",
-                key="download_model_results"
+            st.markdown("### Export Options")
+            
+            export_format = st.selectbox(
+                "Select Format",
+                ["CSV", "Excel", "JSON"],
+                key="export_format"
             )
+            
+            selected_dataset = st.selectbox(
+                "Select Dataset to Export",
+                [name for name, _ in datasets],
+                key="export_dataset"
+            )
+            
+            if st.button("📥 Download Data", use_container_width=True):
+                # Get selected dataframe
+                df_to_export = None
+                for name, df in datasets:
+                    if name == selected_dataset:
+                        df_to_export = df
+                        break
+                
+                if df_to_export is not None:
+                    if export_format == "CSV":
+                        csv = df_to_export.to_csv(index=False)
+                        st.download_button(
+                            label="Click to Download CSV",
+                            data=csv,
+                            file_name=f"{selected_dataset.lower().replace(' ', '_')}.csv",
+                            mime="text/csv",
+                            key="download_csv"
+                        )
+                    
+                    elif export_format == "Excel":
+                        # For Excel, we need to use to_excel
+                        excel_buffer = pd.ExcelWriter('temp.xlsx', engine='openpyxl')
+                        df_to_export.to_excel(excel_buffer, index=False)
+                        excel_buffer.save()
+                        
+                        with open('temp.xlsx', 'rb') as f:
+                            st.download_button(
+                                label="Click to Download Excel",
+                                data=f,
+                                file_name=f"{selected_dataset.lower().replace(' ', '_')}.xlsx",
+                                mime="application/vnd.ms-excel",
+                                key="download_excel"
+                            )
+                    
+                    elif export_format == "JSON":
+                        json_str = df_to_export.to_json(orient='records', indent=2)
+                        st.download_button(
+                            label="Click to Download JSON",
+                            data=json_str,
+                            file_name=f"{selected_dataset.lower().replace(' ', '_')}.json",
+                            mime="application/json",
+                            key="download_json"
+                        )
+    
+    def run(self):
+        """Main application runner"""
+        # Render sidebar
+        self.render_sidebar()
+        
+        # Main content
+        if not st.session_state.data_loaded:
+            self.render_upload_screen()
+        else:
+            self.render_dashboard()
 
 # Run the application
 if __name__ == "__main__":
+    # Set page config
+    st.set_page_config(
+        page_title="Financial Analytics Platform",
+        page_icon="📈",
+        layout="wide",
+        initial_sidebar_state="expanded"
+    )
+    
+    # Initialize and run dashboard
     app = FinancialAnalyticsDashboard()
     app.run()
