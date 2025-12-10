@@ -9,7 +9,7 @@ import os
 import warnings
 warnings.filterwarnings('ignore')
 
-# Custom CSS for professional, elegant design - NO EMOJIS
+# Custom CSS for professional, elegant design
 st.markdown("""
 <style>
     /* Main container styling */
@@ -166,6 +166,19 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    
+    /* Fix for main content alignment */
+    .main .block-container {
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
+    
+    /* Upload screen specific styles */
+    .upload-screen {
+        max-width: 800px;
+        margin-left: 0;
+        padding-top: 2rem;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -248,9 +261,9 @@ class FinancialAnalyticsDashboard:
             st.session_state.anomalies_detected = False
     
     def render_sidebar(self):
-        """Render elegant sidebar with upload and controls - NO EMOJIS"""
+        """Render elegant sidebar with upload and controls"""
         with st.sidebar:
-            # Logo/Title - NO EMOJIS
+            # Logo/Title
             st.markdown("""
             <div style='text-align: center; margin-bottom: 2rem;'>
                 <h3 style='margin: 0.5rem 0; color: #0B3D91;'>Financial Analytics</h3>
@@ -260,7 +273,7 @@ class FinancialAnalyticsDashboard:
             
             st.markdown("---")
             
-            # Upload Section - NO EMOJIS
+            # Upload Section
             st.markdown("### Data Upload")
             
             uploaded_file = st.file_uploader(
@@ -287,13 +300,14 @@ class FinancialAnalyticsDashboard:
                             )
                             
                             st.success("Data processed successfully")
+                            st.rerun()
                             
                         except Exception as e:
                             st.error(f"Error processing data: {str(e)}")
             
             st.markdown("---")
             
-            # Pipeline Status - NO EMOJIS
+            # Pipeline Status
             if st.session_state.data_loaded:
                 st.markdown("### Pipeline Status")
                 
@@ -313,7 +327,7 @@ class FinancialAnalyticsDashboard:
                 
                 st.markdown("---")
                 
-                # Action Buttons - NO EMOJIS
+                # Action Buttons
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("Train Models", use_container_width=True, 
@@ -327,7 +341,7 @@ class FinancialAnalyticsDashboard:
             
             st.markdown("---")
             
-            # Info - NO EMOJIS
+            # Info
             st.markdown("""
             <div style='font-size: 0.8rem; color: var(--text-color-secondary);'>
             <p><strong>Supported Format:</strong> CSV</p>
@@ -350,6 +364,7 @@ class FinancialAnalyticsDashboard:
                     self.ml_pipeline.train_all_models(X_train, X_test, y_train_reg, y_test_reg, y_train_clf, y_test_clf)
                     st.session_state.models_trained = True
                     st.success("Models trained successfully")
+                    st.rerun()
                     
                     # Generate insights
                     self.insights = self.insights_gen.generate_insights(
@@ -370,35 +385,41 @@ class FinancialAnalyticsDashboard:
                     )
                     st.session_state.anomalies_detected = True
                     st.success("Anomalies detected successfully")
+                    st.rerun()
             except Exception as e:
                 st.error(f"Error detecting anomalies: {str(e)}")
     
     def render_upload_screen(self):
-        """Render clean upload interface - NO EMOJIS"""
-        col1, col2, col3 = st.columns([1, 2, 1])
-        with col2:
-            st.markdown('<div class="upload-area">', unsafe_allow_html=True)
+        """Render clean upload interface - Left aligned"""
+        st.markdown('<div class="upload-screen">', unsafe_allow_html=True)
+        
+        # Main header
+        st.markdown('<h1 class="dashboard-title">Financial Analytics Platform</h1>', unsafe_allow_html=True)
+        
+        st.markdown("""
+        <div style='margin-bottom: 2rem;'>
+            <p style='color: var(--text-color-secondary); font-size: 1.1rem;'>
+                Upload your financial time series data to generate predictions, 
+                detect anomalies, and gain AI-driven insights.
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Upload area - Left aligned
+        st.markdown('<div class="upload-area">', unsafe_allow_html=True)
+        
+        uploaded_file = st.file_uploader(
+            "Drag and drop your CSV file here or click to browse",
+            type=['csv'],
+            key="main_uploader",
+            label_visibility="collapsed"
+        )
+        
+        if uploaded_file is not None:
+            st.info(f"File: {uploaded_file.name} ready for processing")
             
-            st.markdown("""
-            <div style='margin-bottom: 2rem;'>
-                <h2 style='color: #0B3D91;'>Financial Analytics Platform</h2>
-                <p style='color: var(--text-color-secondary);'>
-                    Upload your financial time series data to generate predictions, 
-                    detect anomalies, and gain AI-driven insights.
-                </p>
-            </div>
-            """, unsafe_allow_html=True)
-            
-            uploaded_file = st.file_uploader(
-                "Drag and drop your CSV file here",
-                type=['csv'],
-                key="main_uploader",
-                label_visibility="collapsed"
-            )
-            
-            if uploaded_file is not None:
-                st.info(f"File: {uploaded_file.name} ready for processing")
-                
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
                 if st.button("Begin Analysis", type="primary", use_container_width=True):
                     with st.spinner("Loading and processing data..."):
                         try:
@@ -407,28 +428,66 @@ class FinancialAnalyticsDashboard:
                             st.rerun()
                         except Exception as e:
                             st.error(f"Error reading file: {str(e)}")
-            
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Example format
+        with st.expander("CSV Format Requirements", expanded=True):
             st.markdown("""
-            <div style='margin-top: 2rem; color: var(--text-color-secondary); font-size: 0.9rem;'>
-                <p><strong>Example CSV format:</strong></p>
-                <pre style='background: var(--secondary-background-color); padding: 1rem; border-radius: 5px;'>
+            <div style='color: var(--text-color-secondary); font-size: 0.9rem;'>
+                <p><strong>Required columns:</strong> Date, Close</p>
+                <p><strong>Optional columns:</strong> Open, High, Low, Volume</p>
+                <p><strong>Example format:</strong></p>
+                <pre style='background: var(--secondary-background-color); padding: 1rem; border-radius: 5px; margin-top: 0.5rem;'>
 Date,Open,High,Low,Close,Volume
 2023-01-01,100.0,102.5,99.5,101.2,1000000
-2023-01-02,101.2,103.0,100.5,102.8,1200000</pre>
+2023-01-02,101.2,103.0,100.5,102.8,1200000
+2023-01-03,102.8,104.5,102.0,103.5,1150000</pre>
             </div>
             """, unsafe_allow_html=True)
+        
+        # Features list
+        with st.expander("Platform Capabilities"):
+            col1, col2, col3 = st.columns(3)
             
-            st.markdown('</div>', unsafe_allow_html=True)
+            with col1:
+                st.markdown("""
+                **Data Processing**
+                - Automatic column detection
+                - Missing value handling
+                - Outlier detection
+                - Date standardization
+                """)
+            
+            with col2:
+                st.markdown("""
+                **ML Models**
+                - Linear Regression
+                - K-Nearest Neighbors
+                - Gradient Boosted Trees
+                - XGBoost
+                """)
+            
+            with col3:
+                st.markdown("""
+                **Analytics**
+                - Anomaly detection
+                - Technical indicators
+                - AI-generated insights
+                - Interactive visualizations
+                """)
+        
+        st.markdown('</div>', unsafe_allow_html=True)
     
     def render_dashboard(self):
-        """Render main dashboard with tabs - NO EMOJIS"""
+        """Render main dashboard with tabs"""
         # Main header
         st.markdown('<h1 class="dashboard-title">Financial Analytics Dashboard</h1>', unsafe_allow_html=True)
         
         # Summary metrics
         self.render_summary_metrics()
         
-        # Tabs - NO EMOJIS
+        # Tabs
         tab1, tab2, tab3, tab4, tab5 = st.tabs([
             "Overview", 
             "Predictions", 
@@ -544,7 +603,10 @@ Date,Open,High,Low,Close,Volume
                 returns = df['close'].pct_change().dropna()
                 st.markdown(f"**Avg Daily Return:** {returns.mean()*100:.2f}%")
                 st.markdown(f"**Volatility:** {returns.std()*100:.2f}%")
-                st.markdown(f"**Sharpe Ratio:** {returns.mean()/returns.std():.2f}")
+                if returns.std() > 0:
+                    st.markdown(f"**Sharpe Ratio:** {returns.mean()/returns.std():.2f}")
+                else:
+                    st.markdown("**Sharpe Ratio:** N/A")
             
             st.markdown('</div>', unsafe_allow_html=True)
         
@@ -829,7 +891,7 @@ Date,Open,High,Low,Close,Volume
         if not anomalies.empty:
             # Select columns to display
             display_cols = []
-            for col in ['date', 'close', 'volume', 'daily_return', 'anomaly_confidence', 'anomaly_type']:
+            for col in ['date', 'close', 'volume', 'returns', 'anomaly_confidence', 'anomaly_type']:
                 if col in anomalies.columns:
                     display_cols.append(col)
             
@@ -841,7 +903,7 @@ Date,Open,High,Low,Close,Volume
                 )
     
     def render_export_tab(self):
-        """Render export tab - NO EMOJIS"""
+        """Render export tab"""
         st.markdown('<h3 class="section-title">Export Data</h3>', unsafe_allow_html=True)
         
         col1, col2 = st.columns(2)
